@@ -1,13 +1,31 @@
 provider "aws" {
   profile = "terraform"
-  # region is defined in the profile at ~/.aws/config
+  region = "us-west-2"
 }
 
 resource "aws_instance" "example" {
-  ami           = "ami-087f352c165340ea1"
-  instance_type = "t2.micro"
+  ami                    = "ami-075686beab831bb7f" # ubuntu
+  instance_type          = "t2.micro"
+  vpc_security_group_ids = [aws_security_group.instance.id]
 
+  user_data = <<-EOF
+              #!/bin/bash
+              echo "hello world" > index.html
+              nohup busybox httpd -f -p 8080 &
+              EOF
+
+  user_data_replace_on_change = true
   tags = {
     Name = "tf-example"
+  }
+}
+
+resource "aws_security_group" "instance" {
+  name = "terraform-example-instance"
+  ingress {
+    from_port = 8080
+    to_port   = 8080
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
